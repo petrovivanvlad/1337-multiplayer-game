@@ -24,10 +24,12 @@ class Main:
 	players_max, players_params = 4, 5 # 0 - server number, 1 - player id, 2 - x, 3 - y
 	playersMatrix = [[0 for x in range(players_params)] for y in range(players_max)]
 	droplets_max = 20
-	dropletsMatrix = [[0 for x in range(droplets_max)] for y in range(2)]
+	dropletsMatrix = [[0 for x in range(2)] for y in range(droplets_max)]
 	for i in range(droplets_max):
 		dropletsMatrix[i][0] = randint(0, 300)
-		dropletsMatrix[i][1] = randint(0, -300)
+		dropletsMatrix[i][1] = randint(0, 300)
+		dropletsMatrix[i][1] = dropletsMatrix[i][1] * -1
+
 	# Player starting coordinates:
 	playersMatrix[0][0] = 0 # local_player_id
 	playersMatrix[0][1] = 0 # global_player_id
