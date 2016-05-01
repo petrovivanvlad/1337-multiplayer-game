@@ -1,9 +1,7 @@
 import socket
 import pygame
 import threading
-import thread
 from threading import Thread
-from thread import *
 import time
 
 class Player_rect(pygame.sprite.Sprite): 
@@ -23,10 +21,19 @@ class Main:
 	
 	# game:
 	players_max, players_params = 4, 5 # 0 - server number, 1 - player id, 2 - x, 3 - y
-	playersMatrix = [[0 for x in range(players_params)] for y in range(players_max)]
+	playersMatrix = []
+	for i in range (0, players_max):
+		new = []
+		for j in range (0, players_params):
+			new.append(0)
+		playersMatrix.append(new)
+
 	client_id = 0 # should be unique for each player
+	if_move = 0
+	player_dir = 0
+	if_shoot = 0
 	droplets_max = 20
-	dropletsMatrix = [[0 for x in range(droplets_max)] for y in range(2)]
+	dropletsMatrix = [[0] * 2] * droplets_max
 	exit = False # gameloop boolean
 	# start coords:	 
 	playersMatrix[0][0] = 0		# local_player_id
@@ -52,42 +59,62 @@ class Main:
 
 	def reqUpdThread(self, sock): # request for update package
 		while 1:
-			time.sleep(0.01) # dunno if this sleep time is ok
-			sock.sendall('upd')
+			time.sleep(0.1) # dunno if this sleep time is ok
+			sock.sendall('updt'.encode())
 
 	def getUpdThread(self, sock):
 		upd_package = 0
-		upd_package_lenght = 52 # size of update package (string)
+		upd_package_lenght = 60 # size of update package (string)
 		while 1:
-			data = sock.recv(upd_package_lenght)
+			data = sock.recv(upd_package_lenght).decode()
 			while upd_package < upd_package_lenght:
 				upd_package += len(data)
-			Main.playersMatrix[0][2] = int(data[1:7])
-			Main.playersMatrix[0][3] = int(data[7:13])
-			Main.playersMatrix[1][2] = int(data[14:20])
-			Main.playersMatrix[1][3] = int(data[20:26])
-			Main.playersMatrix[2][2] = int(data[27:33])
-			Main.playersMatrix[2][3] = int(data[33:39])
-			Main.playersMatrix[3][2] = int(data[40:46])
-			Main.playersMatrix[3][3] = int(data[46:52])
+			if(data[0] == '0'):
+				Main.playersMatrix[0][2] = int(data[2:8])
+				Main.playersMatrix[0][3] = int(data[8:14])
+				Main.playersMatrix[1][2] = int(data[17:23])
+				Main.playersMatrix[1][3] = int(data[23:29])
+				Main.playersMatrix[2][2] = int(data[32:38])
+				Main.playersMatrix[2][3] = int(data[38:44])
+				Main.playersMatrix[3][2] = int(data[47:53])
+				Main.playersMatrix[3][3] = int(data[53:59])
+			elif(data[0] == '1'):
+				break
 
 	def eventListener(self):
+		keys = pygame.key.get_pressed()
+		if keys[pygame.K_UP]:
+			Main.if_move = 1
+			Main.player_dir = 0
+			self.sendpack()
+		if keys[pygame.K_LEFT]:
+			Main.if_move = 1
+			Main.player_dir = 1
+			self.sendpack()
+		if keys[pygame.K_DOWN]:
+			Main.if_move = 1
+			Main.player_dir = 2
+			self.sendpack()
+		if keys[pygame.K_RIGHT]:
+			Main.if_move = 1
+			Main.player_dir = 3
+			self.sendpack()
 		for event in pygame.event.get():
 			if event.type == pygame.QUIT:
 				Main.exit = True
 			elif event.type == pygame.KEYDOWN:
-				if event.key == pygame.K_UP:
-					Main.sock.sendall(str(Main.client_id) + '00') # change to socket.send() ?
-				if event.key == pygame.K_LEFT:
-					Main.sock.sendall(str(Main.client_id) + '11')
-				if event.key == pygame.K_DOWN:
-					Main.sock.sendall(str(Main.client_id) + '12')
-				if event.key == pygame.K_RIGHT:
-					Main.sock.sendall(str(Main.client_id) + '03')
+				if event.key == pygame.K_SPACE:
+					Main.if_shoot = 1
+					self.sendpack()
 
+	def sendpack(self):
+		Main.sock.sendall((str(Main.client_id) + str(Main.if_move) + str(Main.player_dir) + str(Main.if_shoot)).encode())
+		Main.if_move = 0
+		Main.if_shoot = 0
+		
 	def __init__(self):
 		# On connection server data request (preload server data):
-		client_id = Main.sock.recv(1)
+		client_id = Main.sock.recv(1).decode()
 		Main.client_id = client_id
 
 		t1 = Thread(target = self.reqUpdThread, args = (Main.sock, ))
@@ -118,7 +145,7 @@ class Main:
 		screen = pygame.display.set_mode(screenSize)
 		pygame.display.set_caption('1337 game')
 		pygame.init()
-		print 'GUI loaded.'
+		print('GUI loaded.')
 		clock = pygame.time.Clock()
 
 		# Main loop:
