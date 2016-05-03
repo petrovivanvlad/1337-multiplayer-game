@@ -3,6 +3,7 @@ import pygame
 import threading
 from threading import Thread
 import time
+import json
 
 class Player_rect(pygame.sprite.Sprite): 
 	def __init__(self, color, width, height):
@@ -20,6 +21,9 @@ class Main:
 	sock.connect(serveraddress)
 	
 	# game:
+	exit = False # gameloop boolean
+
+	client_id = 0 # should be unique for each player
 	players_max, players_params = 4, 5 # 0 - server number, 1 - player id, 2 - x, 3 - y
 	playersMatrix = []
 	for i in range (0, players_max):
@@ -28,14 +32,11 @@ class Main:
 			new.append(0)
 		playersMatrix.append(new)
 
-	client_id = 0 # should be unique for each player
 	if_move = 0
 	player_dir = 0
 	if_shoot = 0
-	droplets_max = 20
-	dropletsMatrix = [[0] * 2] * droplets_max
-	exit = False # gameloop boolean
-	# start coords:	 
+
+	# variables init:
 	playersMatrix[0][0] = 0		# local_player_id
 	playersMatrix[0][1] = 0		# global_player_id
 	playersMatrix[0][2] = 0		# player_x
@@ -56,30 +57,33 @@ class Main:
 	playersMatrix[3][2] = 0
 	playersMatrix[3][3] = 0
 	playersMatrix[0][4] = 0
-
+	
+	bullet_list = []
+	for i in range (0, 4):
+		new = []
+		for j in range (0, 3):
+			new.append(0)
+		bullet_list.append(new)
+	def bulletsAdd(self, x, y, vector):
+		Main.bullet_list.append([len(Main.bullet_list) + 1, [x, y, vector]])
+	
 	def reqUpdThread(self, sock): # request for update package
 		while 1:
-			time.sleep(0.1) # dunno if this sleep time is ok
+			time.sleep(0.01) # dunno if this sleep time is ok
 			sock.sendall('updt'.encode())
 
 	def getUpdThread(self, sock):
 		upd_package = 0
 		upd_package_lenght = 60 # size of update package (string)
 		while 1:
-			data = sock.recv(upd_package_lenght).decode()
-			while upd_package < upd_package_lenght:
-				upd_package += len(data)
-			if(data[0] == '0'):
-				Main.playersMatrix[0][2] = int(data[2:8])
-				Main.playersMatrix[0][3] = int(data[8:14])
-				Main.playersMatrix[1][2] = int(data[17:23])
-				Main.playersMatrix[1][3] = int(data[23:29])
-				Main.playersMatrix[2][2] = int(data[32:38])
-				Main.playersMatrix[2][3] = int(data[38:44])
-				Main.playersMatrix[3][2] = int(data[47:53])
-				Main.playersMatrix[3][3] = int(data[53:59])
-			elif(data[0] == '1'):
-				break
+			responce = sock.recv(1024)
+			#print(responce.decode())
+			jsonResponse = json.loads(responce.decode())
+			jsonData = jsonResponse["players_params"]
+			for item in jsonData:
+				Main.playersMatrix[item.get("local_id")][2] = item.get("coord_x")
+				Main.playersMatrix[item.get("local_id")][3] = item.get("coord_y")
+				Main.playersMatrix[item.get("local_id")][4] = item.get("direction")
 
 	def eventListener(self):
 		keys = pygame.key.get_pressed()
@@ -106,7 +110,6 @@ class Main:
 				if event.key == pygame.K_SPACE:
 					Main.if_shoot = 1
 					self.sendpack()
-
 	def sendpack(self):
 		Main.sock.sendall((str(Main.client_id) + str(Main.if_move) + str(Main.player_dir) + str(Main.if_shoot)).encode())
 		Main.if_move = 0
