@@ -13,7 +13,7 @@ class Main:
 	port = 54416
 	serveraddress = (host, port)
 	sock.bind(serveraddress)
-	sock.listen(4)
+	sock.listen(4) # why 4?
 
 	clients = set()
 	clients_lock = threading.Lock()

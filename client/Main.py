@@ -73,8 +73,6 @@ class Main:
 			sock.sendall('updt'.encode())
 
 	def getUpdThread(self, sock):
-		upd_package = 0
-		upd_package_lenght = 60 # size of update package (string)
 		while 1:
 			responce = sock.recv(1024)
 			#print(responce.decode())
