@@ -28,26 +28,25 @@ class Main:
 		for j in range (0, players_params):
 			new.append(0)
 		playersMatrix.append(new)
-	# Player starting coordinates:
 	playersMatrix[0][0] = 0		# local_id
 	playersMatrix[0][1] = 0		# global_id
-	playersMatrix[0][2] = 100	# coord_x
-	playersMatrix[0][3] = 150	# coord_y
+	playersMatrix[0][2] = 9999	# coord_x
+	playersMatrix[0][3] = 9999	# coord_y
 	playersMatrix[0][4] = 0		# direction
 	playersMatrix[1][0] = 1
 	playersMatrix[1][1] = 0
-	playersMatrix[1][2] = 111
-	playersMatrix[1][3] = 160
+	playersMatrix[1][2] = 9999
+	playersMatrix[1][3] = 9999
 	playersMatrix[0][4] = 0
 	playersMatrix[2][0] = 2
 	playersMatrix[2][1] = 0
-	playersMatrix[2][2] = 74
-	playersMatrix[2][3] = 100
+	playersMatrix[2][2] = 9999
+	playersMatrix[2][3] = 9999
 	playersMatrix[0][4] = 0
 	playersMatrix[3][0] = 3
 	playersMatrix[3][1] = 0
-	playersMatrix[3][2] = 120
-	playersMatrix[3][3] = 120
+	playersMatrix[3][2] = 9999
+	playersMatrix[3][3] = 9999
 	playersMatrix[0][4] = 0
 
 	bullet_list = []
@@ -97,38 +96,40 @@ class Main:
 		with self.clients_lock:
 			self.clients.add(connection)
 		try:
+			#connection.sendall(str(Main.connectionNum).encode())
 			while 1:
 				data = connection.recv(4).decode()
-				if data == 'updt': # client's update request while idling
+				sendpack = json.dumps({
+							"players_params": [{
+								"local_id": Main.playersMatrix[0][0],
+								"global_id": Main.playersMatrix[0][1],
+								"coord_x": Main.playersMatrix[0][2],
+								"coord_y": Main.playersMatrix[0][3],
+								"direction": Main.playersMatrix[0][4]
+							}, {
+								"local_id": Main.playersMatrix[1][0],
+								"global_id": Main.playersMatrix[1][1],
+								"coord_x": Main.playersMatrix[1][2],
+								"coord_y": Main.playersMatrix[1][3],
+								"direction": Main.playersMatrix[1][4]
+							}, {
+								"local_id": Main.playersMatrix[2][0],
+								"global_id": Main.playersMatrix[2][1],
+								"coord_x": Main.playersMatrix[2][2],
+								"coord_y": Main.playersMatrix[2][3],
+								"direction": Main.playersMatrix[2][4]
+							}, {
+								"local_id": Main.playersMatrix[3][0],
+								"global_id": Main.playersMatrix[3][1],
+								"coord_x": Main.playersMatrix[3][2],
+								"coord_y": Main.playersMatrix[3][3],
+								"direction": Main.playersMatrix[3][4]
+							}]
+						}).encode()
+				if data[0:3] == 'upd': # client's update request while idling
 					for c in self.clients:
-						c.sendall(json.dumps(
-							{
-								"players_params": [{
-									"local_id": Main.playersMatrix[0][0],
-									"global_id": Main.playersMatrix[0][1],
-									"coord_x": Main.playersMatrix[0][2],
-									"coord_y": Main.playersMatrix[0][3],
-									"direction": Main.playersMatrix[0][4]
-								}, {
-									"local_id": Main.playersMatrix[1][0],
-									"global_id": Main.playersMatrix[1][1],
-									"coord_x": Main.playersMatrix[1][2],
-									"coord_y": Main.playersMatrix[1][3],
-									"direction": Main.playersMatrix[1][4]
-								}, {
-									"local_id": Main.playersMatrix[2][0],
-									"global_id": Main.playersMatrix[2][1],
-									"coord_x": Main.playersMatrix[2][2],
-									"coord_y": Main.playersMatrix[2][3],
-									"direction": Main.playersMatrix[2][4]
-								}, {
-									"local_id": Main.playersMatrix[3][0],
-									"global_id": Main.playersMatrix[3][1],
-									"coord_x": Main.playersMatrix[3][2],
-									"coord_y": Main.playersMatrix[3][3],
-									"direction": Main.playersMatrix[3][4]
-								}]
-							}).encode())
+						c.sendall(str(len(sendpack)).encode())
+						c.sendall(sendpack)
 				else: # client's update request during action
 					self.actionHandler(data)
 		finally:
@@ -146,7 +147,19 @@ class Main:
 				connection, client_address = Main.sock.accept()
 				print('Client connected from ', client_address)
 				Thread(target = self.clientActionThread, args = (connection, client_address)).start()
-				connection.sendall(str(Main.connectionNum).encode())
+				# mega kostyl:
+				if Main.connectionNum == 0:
+					Main.playersMatrix[0][2] = 100	# coord_x
+					Main.playersMatrix[0][3] = 150	# coord_y
+				if Main.connectionNum == 1:
+					Main.playersMatrix[1][2] = 111
+					Main.playersMatrix[1][3] = 160
+				if Main.connectionNum == 2:
+					Main.playersMatrix[2][2] = 100
+					Main.playersMatrix[2][3] = 100
+				if Main.connectionNum == 3:
+					Main.playersMatrix[3][2] = 120
+					Main.playersMatrix[3][3] = 120
 				Main.connectionNum = Main.connectionNum + 1
 
 main = Main()

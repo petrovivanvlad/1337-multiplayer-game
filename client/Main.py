@@ -39,23 +39,23 @@ class Main:
 	# variables init:
 	playersMatrix[0][0] = 0		# local_player_id
 	playersMatrix[0][1] = 0		# global_player_id
-	playersMatrix[0][2] = 0		# player_x
-	playersMatrix[0][3] = 0		# player_y
+	playersMatrix[0][2] = 9999	# player_x
+	playersMatrix[0][3] = 9999	# player_y
 	playersMatrix[0][4] = 0		# player_direction
 	playersMatrix[1][0] = 1
 	playersMatrix[1][1] = 0
-	playersMatrix[1][2] = 0
-	playersMatrix[1][3] = 0
+	playersMatrix[1][2] = 9999
+	playersMatrix[1][3] = 9999
 	playersMatrix[0][4] = 0
 	playersMatrix[2][0] = 2
 	playersMatrix[2][1] = 0
-	playersMatrix[2][2] = 0
-	playersMatrix[2][3] = 0
+	playersMatrix[2][2] = 9999
+	playersMatrix[2][3] = 9999
 	playersMatrix[0][4] = 0
 	playersMatrix[3][0] = 3
 	playersMatrix[3][1] = 0
-	playersMatrix[3][2] = 0
-	playersMatrix[3][3] = 0
+	playersMatrix[3][2] = 9999
+	playersMatrix[3][3] = 9999
 	playersMatrix[0][4] = 0
 	
 	bullet_list = []
@@ -70,13 +70,15 @@ class Main:
 	def reqUpdThread(self, sock): # request for update package
 		while 1:
 			time.sleep(0.01) # dunno if this sleep time is ok
+			#sock.sendall(('upd' + Main.client_id).encode()) # client_id here is to get sure which client wants to update
 			sock.sendall('updt'.encode())
 
 	def getUpdThread(self, sock):
 		while 1:
-			responce = sock.recv(1024)
-			#print(responce.decode())
-			jsonResponse = json.loads(responce.decode())
+			responce = sock.recv(3).decode()
+			packlenght = str(responce)
+			responce = sock.recv(int(packlenght)).decode()
+			jsonResponse = json.loads(responce)
 			jsonData = jsonResponse["players_params"]
 			for item in jsonData:
 				Main.playersMatrix[item.get("local_id")][2] = item.get("coord_x")
@@ -115,8 +117,9 @@ class Main:
 		
 	def __init__(self):
 		# On connection server data request (preload server data):
-		client_id = Main.sock.recv(1).decode()
-		Main.client_id = client_id
+		#client_id = Main.sock.recv(1).decode()
+		#print("Your ID is: " + client_id)
+		#Main.client_id = client_id
 
 		t1 = Thread(target = self.reqUpdThread, args = (Main.sock, ))
 		t2 = Thread(target = self.getUpdThread, args = (Main.sock, ))
