@@ -4,6 +4,7 @@ import threading
 from threading import Thread
 import time
 import json
+from struct import *
 
 class Player_rect(pygame.sprite.Sprite): 
 	def __init__(self, color, width, height):
@@ -75,10 +76,15 @@ class Main:
 
 	def getUpdThread(self, sock):
 		while 1:
-			responce = sock.recv(3).decode()
-			packlenght = str(responce)
-			responce = sock.recv(int(packlenght)).decode()
-			jsonResponse = json.loads(responce)
+			responce = sock.recv(500)
+			packlenght = unpack('I', responce[0:4]) # 4 first packed bytes
+			print(responce.decode())
+			temp = ""
+			for i in range(len(str(packlenght))):
+				if str(packlenght)[i].isdigit():
+					temp = temp + str(packlenght)[i]
+			print(temp)
+			jsonResponse = json.loads(responce.decode()[4:(int(temp) + 4)])
 			jsonData = jsonResponse["players_params"]
 			for item in jsonData:
 				Main.playersMatrix[item.get("local_id")][2] = item.get("coord_x")

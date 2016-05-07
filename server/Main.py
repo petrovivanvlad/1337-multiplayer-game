@@ -5,6 +5,7 @@ from threading import Thread
 from random import randint
 import time
 import json
+from struct import *
 
 class Main:
 	# Technical:
@@ -99,7 +100,7 @@ class Main:
 			#connection.sendall(str(Main.connectionNum).encode())
 			while 1:
 				data = connection.recv(4).decode()
-				sendpack = json.dumps({
+				jsonpack = json.dumps({
 							"players_params": [{
 								"local_id": Main.playersMatrix[0][0],
 								"global_id": Main.playersMatrix[0][1],
@@ -128,8 +129,7 @@ class Main:
 						}).encode()
 				if data[0:3] == 'upd': # client's update request while idling
 					for c in self.clients:
-						c.sendall(str(len(sendpack)).encode())
-						c.sendall(sendpack)
+						c.send(pack('I', len(jsonpack)) + jsonpack)
 				else: # client's update request during action
 					self.actionHandler(data)
 		finally:
